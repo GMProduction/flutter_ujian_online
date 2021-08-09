@@ -4,7 +4,9 @@ import 'package:ujian_online/views/detail.dart';
 import 'package:ujian_online/views/history.dart';
 import 'package:ujian_online/views/login.dart';
 import 'package:ujian_online/views/nilai.dart';
+import 'package:ujian_online/views/profil.dart';
 import 'package:ujian_online/views/soal.dart';
+import 'package:ujian_online/views/welcome.dart';
 
 void main() {
   runApp(MyApp());
@@ -21,7 +23,9 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: "/",
       routes: {
-        "/": (context) => Login(),
+        "/": (context) => Welcome(),
+        "/profil": (context) => Profil(),
+        "/login": (context) => Login(),
         "/dashboard": (context) => Dashboard(),
         "/detail": (context) => Detail(),
         "/history": (context) => History(),

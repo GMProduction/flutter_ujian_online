@@ -46,10 +46,18 @@ class BottomNavbar extends StatelessWidget {
               color: this.selected == 1 ? Colors.lightBlue : Colors.grey,
             ),
           ),
-          Icon(
-            Icons.person,
-            size: 26,
-            color: this.selected == 2 ? Colors.lightBlue : Colors.grey,
+          GestureDetector(
+            onTap: () {
+              String current = ModalRoute.of(context)!.settings.name!;
+              if (current != "/profil") {
+                Navigator.pushNamed(context, "/profil");
+              }
+            },
+            child: Icon(
+              Icons.person,
+              size: 26,
+              color: this.selected == 2 ? Colors.lightBlue : Colors.grey,
+            ),
           ),
         ],
       ),

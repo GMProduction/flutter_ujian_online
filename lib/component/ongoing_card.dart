@@ -6,11 +6,13 @@ class ListCard extends StatelessWidget {
   final String mapel;
   final String image;
   final bool isOngoing;
+  final int time;
 
   const ListCard(
       {Key? key,
       this.paket = "Nama Paket Ujian",
       this.mapel = "Nama Mapel",
+      this.time = 0,
       this.image =
           "https://www.smkn63jkt.sch.id/wp-content/uploads/2020/06/ujian-online.png",
       this.isOngoing = false})
@@ -56,37 +58,43 @@ class ListCard extends StatelessWidget {
                   ],
                 )),
                 Align(
-                  alignment: isOngoing ? Alignment.centerRight : Alignment.centerLeft,
-                  child: isOngoing ? Container(
-                    height: 20,
-                    width: 80,
-                    decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(5),
-                        color: Colors.lightBlue),
-                    child: Center(
-                      child: Text(
-                        "Mulai",
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ) : Container(
-                    height: 20,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          margin: EdgeInsets.only(right: 5),
-                          child: Icon(
-                            Icons.access_alarm, size: 12,
-                            )
+                  alignment:
+                      isOngoing ? Alignment.centerRight : Alignment.centerLeft,
+                  child: isOngoing
+                      ? Container(
+                          height: 20,
+                          width: 80,
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(5),
+                              color: Colors.lightBlue),
+                          child: Center(
+                            child: Text(
+                              "Mulai",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          height: 20,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Container(
+                                  margin: EdgeInsets.only(right: 5),
+                                  child: Icon(
+                                    Icons.access_alarm,
+                                    size: 12,
+                                  )),
+                              Text(
+                                "${this.time} (Menit)",
+                                style: TextStyle(fontSize: 12),
+                              )
+                            ],
+                          ),
                         ),
-                        Text("120 (Menit)", style: TextStyle(fontSize: 12),)
-                      ],
-                    ),
-                  ),
                 )
               ],
             ))

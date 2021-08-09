@@ -1,4 +1,7 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ujian_online/component/bottom_navbar.dart';
 import 'package:ujian_online/component/ongoing_card.dart';
 import 'package:ujian_online/component/profile_navbar.dart';
@@ -10,6 +13,85 @@ class Dashboard extends StatefulWidget {
 }
 
 class _DashboardState extends State<Dashboard> {
+  List<dynamic> _ongoingList = [];
+  List<dynamic> _upComingList = [];
+  bool isLoadingOngoing = true;
+  bool isLoadingUpComming = true;
+
+  @override
+  void initState() {
+    super.initState();
+    getOngoingTest();
+    getUpComingTest();
+  }
+
+  //mengambil data ujian yang sedang berlangsung
+  void getOngoingTest() async {
+    try {
+      SharedPreferences preferences = await SharedPreferences.getInstance();
+      String token = preferences.getString("token") ?? "";
+      final response = await Dio().get(
+        '$HostAddress/paket-ongoing',
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+            "Accept": "application/json"
+          },
+        ),
+      );
+      print(response.data);
+      setState(() {
+        _ongoingList = response.data["payload"] as List;
+      });
+    } on DioError catch (e) {
+      Fluttertoast.showToast(
+          msg: "Terjadi Kesalahan Pada Server...",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.black,
+          textColor: Colors.white,
+          fontSize: 16.0);
+      print(e.response);
+    }
+    setState(() {
+      isLoadingOngoing = false;
+    });
+  }
+
+  void getUpComingTest() async {
+    try {
+      SharedPreferences preferences = await SharedPreferences.getInstance();
+      String token = preferences.getString("token") ?? "";
+      final response = await Dio().get(
+        '$HostAddress/paket-coming-soon',
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+            "Accept": "application/json"
+          },
+        ),
+      );
+      print(response.data);
+      setState(() {
+        _upComingList = response.data["payload"] as List;
+      });
+    } on DioError catch (e) {
+      Fluttertoast.showToast(
+          msg: "Terjadi Kesalahan Pada Server...",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.black,
+          textColor: Colors.white,
+          fontSize: 16.0);
+      print(e.response);
+    }
+    setState(() {
+      isLoadingUpComming = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,7 +125,7 @@ class _DashboardState extends State<Dashboard> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 20),
                       child: Column(
-                        children: DataDummies.ongoingDummy.map((ujian) {
+                        children: _ongoingList.map((ujian) {
                           return Padding(
                             padding:
                                 const EdgeInsets.only(bottom: 10, right: 5),
@@ -53,9 +135,10 @@ class _DashboardState extends State<Dashboard> {
                                     arguments: ujian);
                               },
                               child: ListCard(
-                                paket: ujian["paket"].toString(),
+                                paket: ujian["nama_paket"].toString(),
                                 mapel: ujian["mapel"].toString(),
-                                image: ujian["image"].toString(),
+                                image:
+                                    "$HostImage${ujian["url_gambar"].toString()}",
                                 isOngoing: true,
                               ),
                             ),
@@ -74,13 +157,15 @@ class _DashboardState extends State<Dashboard> {
                       ),
                     ),
                     Column(
-                      children: DataDummies.upComingDummy.map((ujian) {
+                      children: _upComingList.map((ujian) {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 10, right: 5),
                           child: ListCard(
-                            paket: ujian["paket"].toString(),
+                            paket: ujian["nama_paket"].toString(),
                             mapel: ujian["mapel"].toString(),
-                            image: ujian["image"].toString(),
+                            time: ujian["waktu_pengerjaan"],
+                            image:
+                                "$HostImage${ujian["url_gambar"].toString()}",
                             isOngoing: false,
                           ),
                         );

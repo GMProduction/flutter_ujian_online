@@ -1,4 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ujian_online/component/circle_logo.dart';
 import 'package:ujian_online/helper/helper.dart';
 
@@ -8,8 +14,66 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
-  String username = "";
-  String password = "";
+  String username = '';
+  String password = '';
+  bool isLoading = false;
+
+  void login() async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
+      Map<String, dynamic> params = {"username": username, "password": "siswa"};
+      var formData = FormData.fromMap(params);
+      final response = await Dio().post(
+        '$HostAddress/login',
+        options: Options(
+          headers: {"Accept": "application/json"},
+        ),
+        data: formData,
+      );
+      final int code = response.data['status'] as int;
+      print(response.data);
+      if (code == 200) {
+        final String token = response.data['msg'] as String;
+        SharedPreferences preferences = await SharedPreferences.getInstance();
+        preferences.setString("token", token);
+        Fluttertoast.showToast(
+            msg: "Login Berhasil Token $token",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.CENTER,
+            timeInSecForIosWeb: 1,
+            backgroundColor: Colors.black,
+            textColor: Colors.white,
+            fontSize: 16.0);
+        Navigator.pushNamedAndRemoveUntil(
+            context, "/dashboard", ModalRoute.withName("/dashboard"));
+      } else {
+        Fluttertoast.showToast(
+            msg: "Login Gagal Silahkan Cek Username Dan Password...",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.CENTER,
+            timeInSecForIosWeb: 1,
+            backgroundColor: Colors.black,
+            textColor: Colors.white,
+            fontSize: 16.0);
+      }
+    } on DioError catch (e) {
+      Fluttertoast.showToast(
+          msg: "Terjadi Kesalahan Pada Server...",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.black,
+          textColor: Colors.white,
+          fontSize: 16.0);
+      print(e.response);
+    }
+    setState(() {
+      isLoading = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -20,8 +84,7 @@ class _LoginState extends State<Login> {
           Center(
             child: Container(
                 margin: EdgeInsets.only(bottom: 10),
-                child: CircleLogo(
-                    image: BaseAvatar)),
+                child: CircleLogo(image: BaseAvatar)),
           ),
           Text(
             "Selamat Datang Di Sistem Informasi Ujian Online",
@@ -47,6 +110,11 @@ class _LoginState extends State<Login> {
           Container(
             padding: EdgeInsets.only(left: 20, right: 20, bottom: 20),
             child: TextField(
+              onChanged: (text) {
+                setState(() {
+                  password = text;
+                });
+              },
               obscureText: true,
               decoration: InputDecoration(
                   border: OutlineInputBorder(
@@ -60,7 +128,9 @@ class _LoginState extends State<Login> {
             padding: EdgeInsets.symmetric(horizontal: 20),
             child: GestureDetector(
               onTap: () {
-                Navigator.pushNamed(context, "/dashboard");
+                if (!isLoading) {
+                  login();
+                }
               },
               child: Container(
                 height: 60,
@@ -69,13 +139,37 @@ class _LoginState extends State<Login> {
                   color: Colors.lightBlue,
                 ),
                 child: Center(
-                  child: Text(
-                    "Login",
-                    style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold),
-                  ),
+                  child: isLoading
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 1,
+                              ),
+                            ),
+                            SizedBox(
+                              width: 5,
+                            ),
+                            Text(
+                              "loading...",
+                              style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        )
+                      : Text(
+                          "Login",
+                          style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold),
+                        ),
                 ),
               ),
             ),

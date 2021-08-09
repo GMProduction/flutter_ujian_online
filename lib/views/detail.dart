@@ -1,4 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_html/flutter_html.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ujian_online/helper/helper.dart';
 
 class Detail extends StatefulWidget {
@@ -6,6 +10,8 @@ class Detail extends StatefulWidget {
   _DetailState createState() => _DetailState();
 }
 
+bool isLoading = true;
+List<dynamic> _listSoal = [];
 Map<String, dynamic> ujian = {};
 
 class _DetailState extends State<Detail> {
@@ -14,10 +20,51 @@ class _DetailState extends State<Detail> {
     super.initState();
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       var arguments = ModalRoute.of(context)!.settings.arguments;
-      setState(() {
-        ujian = arguments as Map<String, dynamic>;
-      });
+      if (arguments != null) {
+        Map<String, dynamic> tempArgs = arguments as Map<String, dynamic>;
+        setState(() {
+          ujian = tempArgs;
+        });
+        int id = tempArgs["id"] as int;
+        getDetailPaket(id);
+      }
+
       print(arguments);
+    });
+  }
+
+  void getDetailPaket(int id) async {
+    try {
+      SharedPreferences preferences = await SharedPreferences.getInstance();
+      String token = preferences.getString("token") ?? "";
+      print(token);
+      final response = await Dio().get(
+        '$HostAddress/paket/$id',
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+            "Accept": "application/json"
+          },
+        ),
+      );
+
+      print(response.data);
+      setState(() {
+        _listSoal = response.data["payload"]["get_soal_id"] as List;
+      });
+    } on DioError catch (e) {
+      Fluttertoast.showToast(
+          msg: "Terjadi Kesalahan Pada Server...",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.black,
+          textColor: Colors.white,
+          fontSize: 16.0);
+      print(e.response);
+    }
+    setState(() {
+      isLoading = false;
     });
   }
 
@@ -41,7 +88,11 @@ class _DetailState extends State<Detail> {
                             color: Colors.lightBlue,
                             borderRadius: BorderRadius.circular(10),
                             image: DecorationImage(
-                                image: ujian["image"] == null ? NetworkImage(BaseAvatar) : NetworkImage(ujian["image"]),
+                                image: (ujian["url_gambar"] == null ||
+                                        ujian["url_gambar"] == "")
+                                    ? NetworkImage(BaseAvatar)
+                                    : NetworkImage(
+                                        "$HostImage${ujian["url_gambar"].toString()}"),
                                 fit: BoxFit.fill)),
                       ),
                     ),
@@ -56,7 +107,7 @@ class _DetailState extends State<Detail> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                ujian["paket"].toString(),
+                                ujian["nama_paket"].toString(),
                                 style: TextStyle(
                                     fontSize: 16, fontWeight: FontWeight.bold),
                               ),
@@ -76,7 +127,7 @@ class _DetailState extends State<Detail> {
                                     size: 12,
                                   )),
                               Text(
-                                "${ujian["time"].toString()} (Menit)",
+                                "${ujian["waktu_pengerjaan"].toString()} (Menit)",
                                 style: TextStyle(fontSize: 12),
                               )
                             ],
@@ -92,13 +143,10 @@ class _DetailState extends State<Detail> {
                                 fontSize: 16, fontWeight: FontWeight.bold))),
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 20),
-                      child: Text(
-                        ujian["aturan"].toString(),
-                        style: TextStyle(
-                          fontSize: 12,
-                        ),
-                        textAlign: TextAlign.justify,
-                      ),
+                      child: Html(
+                          data: ujian["pengaturan"] != null
+                              ? ujian["pengaturan"].toString()
+                              : "<p></p>"),
                     ),
                   ],
                 ),
@@ -109,7 +157,7 @@ class _DetailState extends State<Detail> {
                   EdgeInsets.only(left: 20, right: 20, bottom: 20, top: 10),
               child: GestureDetector(
                 onTap: () {
-                  Navigator.pushNamed(context, "/soal", arguments: ujian["id"]);
+                  Navigator.pushNamed(context, "/soal", arguments: _listSoal);
                 },
                 child: Container(
                   height: 60,
