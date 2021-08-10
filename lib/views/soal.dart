@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
@@ -16,18 +18,23 @@ class _SoalState extends State<Soal> {
   List<dynamic> listSoal = [];
   int selected = 0;
   bool isLoading = true;
+  int sisaWaktu = 0;
+  int selectedAnswer = 0;
+  Timer? _timer;
   @override
   void initState() {
     super.initState();
+    hitungWaktu();
     WidgetsBinding.instance!.addPostFrameCallback((_) {
-      var arguments = ModalRoute.of(context)!.settings.arguments;
+      var arguments =
+          ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
       print(arguments);
       if (arguments != null) {
-        List<dynamic> tempArgs = arguments as List;
+        List<dynamic> tempArgs = arguments["soal"] as List;
+        int sisa = arguments["sisa"] as int;
         setState(() {
-          // soal = filter["soal"][0]["soal"];
-          // pilihan = filter["soal"][0]["pilihan"];
           listSoal = tempArgs;
+          sisaWaktu = sisa;
         });
         if (listSoal.length > 0) {
           setState(() {
@@ -36,14 +43,41 @@ class _SoalState extends State<Soal> {
           getSoalById(listSoal[0]["id"] as int);
         }
       }
-
-      // getSoalById(arguments as int);
-      // List<Map<String, dynamic>> dummy = DataDummies.ongoingDummy;
-      // Map<String, dynamic> filter =
-      //     dummy.firstWhere((element) => element["id"] == arguments);
-
-      // print(listSoal.length);
     });
+  }
+
+  void hitungWaktu() {
+    // DateTime now = DateTime.now();
+    // DateTime future = DateTime(2021, 08, 10, 14, 10, 00);
+    // int sisa = future.difference(now).inMinutes;
+    // if (sisa > 0) {
+    //   setState(() {
+    //     sisaWaktu = future.difference(now).inMinutes;
+    //   });
+    // }
+    const oneSec = const Duration(minutes: 1);
+    _timer = new Timer.periodic(oneSec, (timer) {
+      if (sisaWaktu == 0) {
+        setState(() {
+          timer.cancel();
+        });
+      } else {
+        setState(() {
+          sisaWaktu--;
+        });
+      }
+    });
+    // print(future.difference(now).inMinutes);
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    if (_timer != null) {
+      _timer!.cancel();
+      print("CANCEL TIMER");
+    }
+    super.dispose();
   }
 
   void getSoalById(int id) async {
@@ -67,10 +101,10 @@ class _SoalState extends State<Soal> {
       setState(() {
         soal = response.data["payload"]["soal"];
         pilihan = response.data["payload"]["get_jawaban"] as List;
+        selectedAnswer = response.data["payload"]["get_nilai"] == null
+            ? 0
+            : response.data["payload"]["get_nilai"]["id_jawaban"] as int;
       });
-      // setState(() {
-      //   _ongoingList = response.data["payload"] as List;
-      // });
     } on DioError catch (e) {
       Fluttertoast.showToast(
           msg: "Terjadi Kesalahan Pada Server...",
@@ -87,12 +121,41 @@ class _SoalState extends State<Soal> {
     });
   }
 
+  void jawab(int id) async {
+    try {
+      SharedPreferences preferences = await SharedPreferences.getInstance();
+      String token = preferences.getString("token") ?? "";
+      var data = FormData.fromMap({"id_jawaban": id});
+      int idSoal = listSoal[selected]["id"] as int;
+      final response = await Dio().post(
+        '$HostAddress/soal/$idSoal',
+        data: data,
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+            "Accept": "application/json"
+          },
+        ),
+      );
+      setState(() {
+        selectedAnswer = id;
+      });
+      print(response.data);
+    } on DioError catch (e) {
+      Fluttertoast.showToast(
+          msg: "Terjadi Kesalahan Pada Server...",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.black,
+          textColor: Colors.white,
+          fontSize: 16.0);
+      print(e.response);
+    }
+  }
+
   void gantiSoal(int index) {
     getSoalById(listSoal[index]["id"] as int);
-    // setState(() {
-    //   soal = listSoal[index]["soal"];
-    //   pilihan = listSoal[index]["pilihan"];
-    // });
   }
 
   @override
@@ -108,6 +171,22 @@ class _SoalState extends State<Soal> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Container(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      child: Container(
+                        height: 55,
+                        decoration: BoxDecoration(
+                            color: Colors.lightBlue,
+                            borderRadius: BorderRadius.circular(10)),
+                        child: Center(
+                          child: Text(
+                            "Sisa Waktu : ${sisaWaktu.toString()} Menit",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ),
                     Container(
                       padding: EdgeInsets.only(left: 20, top: 20, right: 20),
                       child: Text(
@@ -125,28 +204,50 @@ class _SoalState extends State<Soal> {
                     Column(
                       children: pilihan.map((e) {
                         int index = pilihan.indexOf(e);
+                        int id = e["id"] as int;
                         return Container(
                           padding:
                               EdgeInsets.only(left: 20, right: 20, bottom: 10),
-                          child: Container(
-                            padding: EdgeInsets.all(5),
-                            width: double.infinity,
-                            decoration: BoxDecoration(
+                          child: GestureDetector(
+                            onTap: () {
+                              jawab(id);
+                            },
+                            child: Container(
+                              padding: EdgeInsets.only(
+                                  left: 5, right: 5, top: 15, bottom: 15),
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: id == selectedAnswer
+                                    ? Colors.lightBlue
+                                    : Colors.white,
                                 borderRadius: BorderRadius.circular(5),
                                 border: Border.all(
-                                    color: Colors.lightBlue, width: 1)),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "${String.fromCharCode(65 + index).toLowerCase()}. ",
-                                  style: TextStyle(),
+                                  color: Colors.lightBlue,
+                                  width: 1,
                                 ),
-                                Expanded(
-                                  child: Text(e["jawaban"].toString()),
-                                )
-                              ],
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "${String.fromCharCode(65 + index).toLowerCase()}. ",
+                                    style: TextStyle(
+                                        color: id == selectedAnswer
+                                            ? Colors.white
+                                            : Colors.black),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      e["jawaban"].toString(),
+                                      style: TextStyle(
+                                          color: id == selectedAnswer
+                                              ? Colors.white
+                                              : Colors.black),
+                                    ),
+                                  )
+                                ],
+                              ),
                             ),
                           ),
                         );

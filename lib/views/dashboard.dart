@@ -17,10 +17,14 @@ class _DashboardState extends State<Dashboard> {
   List<dynamic> _upComingList = [];
   bool isLoadingOngoing = true;
   bool isLoadingUpComming = true;
+  String avatar = BaseAvatar;
+  String nama = "Nama Siswa";
+  String kelas = "Kelas";
 
   @override
   void initState() {
     super.initState();
+    // getProfile();
     getOngoingTest();
     getUpComingTest();
   }
@@ -92,6 +96,37 @@ class _DashboardState extends State<Dashboard> {
     });
   }
 
+  void getProfile() async {
+    String url = "$HostAddress/profil";
+    String _token = await GetToken();
+    try {
+      final response = await Dio().get(url,
+          options: Options(headers: {
+            "Authorization": "Bearer $_token",
+            "Accept": "application/json"
+          }));
+
+      // setState(() {
+      //   avatar = response.data["payload"]["get_siswa"]["image"] == null
+      //       ? BaseAvatar
+      //       : "$HostImage${response.data["payload"]["get_siswa"]["image"]}";
+      //   nama = response.data["payload"]["get_siswa"]["nama"].toString();
+      //   kelas = response.data["payload"]["get_siswa"]["kelas"].toString();
+      // });
+      print(response.data);
+    } on DioError catch (e) {
+      Fluttertoast.showToast(
+          msg: "Gagal Mengganti Gambar Profil...",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.black,
+          textColor: Colors.white,
+          fontSize: 16.0);
+      print(e.response);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -124,27 +159,38 @@ class _DashboardState extends State<Dashboard> {
                     ),
                     Padding(
                       padding: const EdgeInsets.only(bottom: 20),
-                      child: Column(
-                        children: _ongoingList.map((ujian) {
-                          return Padding(
-                            padding:
-                                const EdgeInsets.only(bottom: 10, right: 5),
-                            child: GestureDetector(
-                              onTap: () {
-                                Navigator.pushNamed(context, "/detail",
-                                    arguments: ujian);
-                              },
-                              child: ListCard(
-                                paket: ujian["nama_paket"].toString(),
-                                mapel: ujian["mapel"].toString(),
-                                image:
-                                    "$HostImage${ujian["url_gambar"].toString()}",
-                                isOngoing: true,
+                      child: isLoadingOngoing
+                          ? Container(
+                              height: 140,
+                              child: Center(
+                                child: SizedBox(
+                                  height: 30,
+                                  width: 30,
+                                  child: CircularProgressIndicator(),
+                                ),
                               ),
+                            )
+                          : Column(
+                              children: _ongoingList.map((ujian) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(
+                                      bottom: 10, right: 5),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      Navigator.pushNamed(context, "/detail",
+                                          arguments: ujian);
+                                    },
+                                    child: ListCard(
+                                      paket: ujian["nama_paket"].toString(),
+                                      mapel: ujian["mapel"].toString(),
+                                      image:
+                                          "$HostImage${ujian["url_gambar"].toString()}",
+                                      isOngoing: true,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
                             ),
-                          );
-                        }).toList(),
-                      ),
                     ),
                     Container(
                       margin: EdgeInsets.only(bottom: 20),
@@ -156,21 +202,33 @@ class _DashboardState extends State<Dashboard> {
                             fontWeight: FontWeight.bold),
                       ),
                     ),
-                    Column(
-                      children: _upComingList.map((ujian) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 10, right: 5),
-                          child: ListCard(
-                            paket: ujian["nama_paket"].toString(),
-                            mapel: ujian["mapel"].toString(),
-                            time: ujian["waktu_pengerjaan"],
-                            image:
-                                "$HostImage${ujian["url_gambar"].toString()}",
-                            isOngoing: false,
+                    isLoadingUpComming
+                        ? Container(
+                            height: 140,
+                            child: Center(
+                              child: SizedBox(
+                                height: 30,
+                                width: 30,
+                                child: CircularProgressIndicator(),
+                              ),
+                            ),
+                          )
+                        : Column(
+                            children: _upComingList.map((ujian) {
+                              return Padding(
+                                padding:
+                                    const EdgeInsets.only(bottom: 10, right: 5),
+                                child: ListCard(
+                                  paket: ujian["nama_paket"].toString(),
+                                  mapel: ujian["mapel"].toString(),
+                                  time: ujian["waktu_pengerjaan"],
+                                  image:
+                                      "$HostImage${ujian["url_gambar"].toString()}",
+                                  isOngoing: false,
+                                ),
+                              );
+                            }).toList(),
                           ),
-                        );
-                      }).toList(),
-                    ),
                   ],
                 ),
               ),

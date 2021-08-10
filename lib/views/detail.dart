@@ -18,6 +18,7 @@ class _DetailState extends State<Detail> {
   @override
   void initState() {
     super.initState();
+
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       var arguments = ModalRoute.of(context)!.settings.arguments;
       if (arguments != null) {
@@ -28,11 +29,12 @@ class _DetailState extends State<Detail> {
         int id = tempArgs["id"] as int;
         getDetailPaket(id);
       }
-
       print(arguments);
     });
   }
 
+//cek-peserta/idPaket
+//cek-peserta/idPaket/selesai
   void getDetailPaket(int id) async {
     try {
       SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -47,11 +49,74 @@ class _DetailState extends State<Detail> {
           },
         ),
       );
-
       print(response.data);
       setState(() {
         _listSoal = response.data["payload"]["get_soal_id"] as List;
       });
+    } on DioError catch (e) {
+      Fluttertoast.showToast(
+          msg: "Terjadi Kesalahan Pada Server...",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.black,
+          textColor: Colors.white,
+          fontSize: 16.0);
+      print(e.response);
+    }
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  void mulaiTest(int id) async {
+    try {
+      SharedPreferences preferences = await SharedPreferences.getInstance();
+      String token = preferences.getString("token") ?? "";
+      print(token);
+      final response = await Dio().get(
+        '$HostAddress/cek-peserta/$id',
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+            "Accept": "application/json"
+          },
+        ),
+      );
+
+      print(response.data);
+      DateTime start = DateTime.parse(response.data["waktu_mulai"].toString());
+      DateTime testFinish = start.add(const Duration(minutes: 90));
+      DateTime now = DateTime.now();
+      if (testFinish.compareTo(now) <= 0) {
+        //Waktu Terlewat kirim api selesai
+        Fluttertoast.showToast(
+            msg: "Waktu Kelewat...",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.CENTER,
+            timeInSecForIosWeb: 1,
+            backgroundColor: Colors.black,
+            textColor: Colors.white,
+            fontSize: 16.0);
+      } else {
+        //Waktu masih sisa kirim
+        int sisaWaktu = testFinish.difference(now).inMinutes;
+        print("Sisa waktu : $sisaWaktu");
+        Fluttertoast.showToast(
+            msg: "Waktu Masih Bisa...",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.CENTER,
+            timeInSecForIosWeb: 1,
+            backgroundColor: Colors.black,
+            textColor: Colors.white,
+            fontSize: 16.0);
+        Navigator.pushNamed(context, "/soal", arguments: {
+          "soal": _listSoal,
+          "sisa": sisaWaktu,
+        });
+      }
+
+      //
     } on DioError catch (e) {
       Fluttertoast.showToast(
           msg: "Terjadi Kesalahan Pada Server...",
@@ -157,7 +222,10 @@ class _DetailState extends State<Detail> {
                   EdgeInsets.only(left: 20, right: 20, bottom: 20, top: 10),
               child: GestureDetector(
                 onTap: () {
-                  Navigator.pushNamed(context, "/soal", arguments: _listSoal);
+                  int id = ujian["id"] as int;
+                  mulaiTest(id);
+                  // Navigator.pushNamed(context, "/soal",
+                  //     arguments: {"soal": _listSoal, "paket_id": ujian["id"]});
                 },
                 child: Container(
                   height: 60,
