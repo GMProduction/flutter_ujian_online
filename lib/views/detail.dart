@@ -69,6 +69,31 @@ class _DetailState extends State<Detail> {
     });
   }
 
+  void setSelesai(String token, int id) async {
+    try {
+      final response = await Dio().get(
+        '$HostAddress/cek-peserta/$id/selesai',
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+            "Accept": "application/json"
+          },
+        ),
+      );
+      print(response.data);
+    } on DioError catch (e) {
+      Fluttertoast.showToast(
+          msg: "Gagal Menyelesaikan Ujian",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.black,
+          textColor: Colors.white,
+          fontSize: 16.0);
+      print(e.response);
+    }
+  }
+
   void mulaiTest(int id) async {
     try {
       SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -90,14 +115,8 @@ class _DetailState extends State<Detail> {
       DateTime now = DateTime.now();
       if (testFinish.compareTo(now) <= 0) {
         //Waktu Terlewat kirim api selesai
-        Fluttertoast.showToast(
-            msg: "Waktu Kelewat...",
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.CENTER,
-            timeInSecForIosWeb: 1,
-            backgroundColor: Colors.black,
-            textColor: Colors.white,
-            fontSize: 16.0);
+        setSelesai(token, id);
+        Navigator.popAndPushNamed(context, "/history");
       } else {
         //Waktu masih sisa kirim
         int sisaWaktu = testFinish.difference(now).inMinutes;
