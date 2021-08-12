@@ -14,12 +14,15 @@ class Soal extends StatefulWidget {
 
 class _SoalState extends State<Soal> {
   dynamic soal;
+  int idPaket = 0;
   List<dynamic> pilihan = [];
   List<dynamic> listSoal = [];
   int selected = 0;
   bool isLoading = true;
   int sisaWaktu = 0;
   int selectedAnswer = 0;
+  bool loadingGantiSoal = false;
+  bool isKumpulkan = false;
   Timer? _timer;
   @override
   void initState() {
@@ -39,6 +42,7 @@ class _SoalState extends State<Soal> {
         if (listSoal.length > 0) {
           setState(() {
             selected = 0;
+            idPaket = listSoal[0]["id_paket"] as int;
           });
           getSoalById(listSoal[0]["id"] as int);
         }
@@ -81,6 +85,9 @@ class _SoalState extends State<Soal> {
   }
 
   void getSoalById(int id) async {
+    setState(() {
+      isLoading = true;
+    });
     print("=====Jumlah Soal=====");
     print(listSoal.length);
     try {
@@ -158,6 +165,40 @@ class _SoalState extends State<Soal> {
     getSoalById(listSoal[index]["id"] as int);
   }
 
+  void setSelesai() async {
+    setState(() {
+      isKumpulkan = true;
+    });
+    try {
+      SharedPreferences preferences = await SharedPreferences.getInstance();
+      String token = preferences.getString("token") ?? "";
+      final response = await Dio().get(
+        '$HostAddress/cek-peserta/$idPaket/selesai',
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+            "Accept": "application/json"
+          },
+        ),
+      );
+      print(response.data);
+    } on DioError catch (e) {
+      Fluttertoast.showToast(
+          msg: "Gagal Menyelesaikan Ujian",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.black,
+          textColor: Colors.white,
+          fontSize: 16.0);
+      print(e.response);
+    }
+    setState(() {
+      isKumpulkan = false;
+    });
+    Navigator.popAndPushNamed(context, "/history");
+  }
+
   @override
   Widget build(BuildContext context) {
     print(selected);
@@ -166,188 +207,241 @@ class _SoalState extends State<Soal> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      child: Container(
-                        height: 55,
-                        decoration: BoxDecoration(
-                            color: Colors.lightBlue,
-                            borderRadius: BorderRadius.circular(10)),
-                        child: Center(
-                          child: Text(
-                            "Sisa Waktu : ${sisaWaktu.toString()} Menit",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: EdgeInsets.only(left: 20, top: 20, right: 20),
-                      child: Text(
-                        "Soal Nomor ${(selected + 1).toString()}",
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    Container(
-                        padding: EdgeInsets.all(20),
-                        child: Html(
-                            data: soal != null
-                                ? soal.toString()
-                                : "<div></div>")),
-                    Column(
-                      children: pilihan.map((e) {
-                        int index = pilihan.indexOf(e);
-                        int id = e["id"] as int;
-                        return Container(
-                          padding:
-                              EdgeInsets.only(left: 20, right: 20, bottom: 10),
-                          child: GestureDetector(
-                            onTap: () {
-                              jawab(id);
-                            },
-                            child: Container(
-                              padding: EdgeInsets.only(
-                                  left: 5, right: 5, top: 15, bottom: 15),
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: id == selectedAnswer
-                                    ? Colors.lightBlue
-                                    : Colors.white,
-                                borderRadius: BorderRadius.circular(5),
-                                border: Border.all(
-                                  color: Colors.lightBlue,
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "${String.fromCharCode(65 + index).toLowerCase()}. ",
-                                    style: TextStyle(
-                                        color: id == selectedAnswer
-                                            ? Colors.white
-                                            : Colors.black),
-                                  ),
-                                  Expanded(
-                                    child: Text(
-                                      e["jawaban"].toString(),
-                                      style: TextStyle(
-                                          color: id == selectedAnswer
-                                              ? Colors.white
-                                              : Colors.black),
-                                    ),
-                                  )
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Container(
+                height: 55,
+                decoration: BoxDecoration(
+                    color: Colors.lightBlue,
+                    borderRadius: BorderRadius.circular(10)),
+                child: Center(
+                  child: Text(
+                    "Sisa Waktu : ${sisaWaktu.toString()} Menit",
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ),
             ),
-            Container(
-              padding:
-                  EdgeInsets.only(left: 20, top: 10, right: 20, bottom: 20),
-              child: selected == 0
-                  ? GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selected += 1;
-                        });
-                        gantiSoal(selected);
-                      },
-                      child: Container(
-                        height: 65,
-                        decoration: BoxDecoration(
-                          color: Colors.lightBlue,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Center(
-                          child: Text(
-                            "Berikutnya",
-                            style: TextStyle(color: Colors.white),
+            Expanded(
+              child: isLoading
+                  ? Container(
+                      width: double.infinity,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            height: 30,
+                            width: 30,
+                            child: CircularProgressIndicator(),
                           ),
-                        ),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          Text("Sedang Mengunduh Data Soal...")
+                        ],
                       ),
                     )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Flexible(
-                          flex: 1,
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                selected += -1;
-                              });
-                              gantiSoal(selected);
-                            },
-                            child: Container(
-                              height: 65,
-                              decoration: BoxDecoration(
-                                color: Colors.lightBlue,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  "Sebelumnya",
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ),
+                  : SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding:
+                                EdgeInsets.only(left: 20, top: 20, right: 20),
+                            child: Text(
+                              "Soal Nomor ${(selected + 1).toString()}",
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                           ),
-                        ),
-                        SizedBox(
-                          width: 15,
-                        ),
-                        Flexible(
-                          flex: 1,
-                          child: GestureDetector(
-                            onTap: () {
-                              if ((listSoal.length - 1) == selected) {
-                                //kumpulkan
-                              } else {
-                                setState(() {
-                                  selected += 1;
-                                });
-                                gantiSoal(selected);
-                              }
-                            },
-                            child: Container(
-                              height: 65,
-                              decoration: BoxDecoration(
-                                color: Colors.lightBlue,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Center(
-                                child: ((listSoal.length - 1) == selected)
-                                    ? Text(
-                                        "Kumpulkan",
-                                        style: TextStyle(color: Colors.white),
-                                      )
-                                    : Text(
-                                        "Berikutnya",
-                                        style: TextStyle(color: Colors.white),
+                          Container(
+                              padding: EdgeInsets.all(20),
+                              child: Html(
+                                  data: soal != null
+                                      ? soal.toString()
+                                      : "<div></div>")),
+                          Column(
+                            children: pilihan.map((e) {
+                              int index = pilihan.indexOf(e);
+                              int id = e["id"] as int;
+                              return Container(
+                                padding: EdgeInsets.only(
+                                    left: 20, right: 20, bottom: 10),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    jawab(id);
+                                  },
+                                  child: Container(
+                                    padding: EdgeInsets.only(
+                                        left: 5, right: 5, top: 15, bottom: 15),
+                                    width: double.infinity,
+                                    decoration: BoxDecoration(
+                                      color: id == selectedAnswer
+                                          ? Colors.lightBlue
+                                          : Colors.white,
+                                      borderRadius: BorderRadius.circular(5),
+                                      border: Border.all(
+                                        color: Colors.lightBlue,
+                                        width: 1,
                                       ),
-                              ),
-                            ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "${String.fromCharCode(65 + index).toLowerCase()}. ",
+                                          style: TextStyle(
+                                              color: id == selectedAnswer
+                                                  ? Colors.white
+                                                  : Colors.black),
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            e["jawaban"].toString(),
+                                            style: TextStyle(
+                                                color: id == selectedAnswer
+                                                    ? Colors.white
+                                                    : Colors.black),
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-            )
+            ),
+            isLoading
+                ? Container()
+                : isKumpulkan
+                    ? Container(
+                        padding: EdgeInsets.only(
+                            left: 20, top: 10, right: 20, bottom: 20),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              height: 30,
+                              width: 30,
+                              child: CircularProgressIndicator(),
+                            ),
+                            SizedBox(
+                              width: 5,
+                            ),
+                            Text("Sedang Mengumpulkan Ujian...")
+                          ],
+                        ),
+                      )
+                    : Container(
+                        padding: EdgeInsets.only(
+                            left: 20, top: 10, right: 20, bottom: 20),
+                        child: selected == 0
+                            ? GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    selected += 1;
+                                  });
+                                  gantiSoal(selected);
+                                },
+                                child: Container(
+                                  height: 65,
+                                  decoration: BoxDecoration(
+                                    color: Colors.lightBlue,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      "Berikutnya",
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Flexible(
+                                    flex: 1,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          selected += -1;
+                                        });
+                                        gantiSoal(selected);
+                                      },
+                                      child: Container(
+                                        height: 65,
+                                        decoration: BoxDecoration(
+                                          color: Colors.lightBlue,
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            "Sebelumnya",
+                                            style:
+                                                TextStyle(color: Colors.white),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: 15,
+                                  ),
+                                  Flexible(
+                                    flex: 1,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        if ((listSoal.length - 1) == selected) {
+                                          //kumpulkan
+                                          setSelesai();
+                                        } else {
+                                          setState(() {
+                                            selected += 1;
+                                          });
+                                          gantiSoal(selected);
+                                        }
+                                      },
+                                      child: Container(
+                                        height: 65,
+                                        decoration: BoxDecoration(
+                                          color: ((listSoal.length - 1) ==
+                                                  selected)
+                                              ? Colors.amber
+                                              : Colors.lightBlue,
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                        ),
+                                        child: Center(
+                                          child: ((listSoal.length - 1) ==
+                                                  selected)
+                                              ? Text(
+                                                  "Kumpulkan",
+                                                  style: TextStyle(
+                                                      color: Colors.white),
+                                                )
+                                              : Text(
+                                                  "Berikutnya",
+                                                  style: TextStyle(
+                                                      color: Colors.white),
+                                                ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      )
           ],
         ),
       ),

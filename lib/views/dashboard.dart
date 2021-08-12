@@ -20,17 +20,22 @@ class _DashboardState extends State<Dashboard> {
   String avatar = BaseAvatar;
   String nama = "Nama Siswa";
   String kelas = "Kelas";
+  ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    // getProfile();
+
+    getProfile();
     getOngoingTest();
     getUpComingTest();
   }
 
   //mengambil data ujian yang sedang berlangsung
   void getOngoingTest() async {
+    setState(() {
+      isLoadingOngoing = true;
+    });
     try {
       SharedPreferences preferences = await SharedPreferences.getInstance();
       String token = preferences.getString("token") ?? "";
@@ -64,6 +69,9 @@ class _DashboardState extends State<Dashboard> {
   }
 
   void getUpComingTest() async {
+    setState(() {
+      isLoadingUpComming = true;
+    });
     try {
       SharedPreferences preferences = await SharedPreferences.getInstance();
       String token = preferences.getString("token") ?? "";
@@ -97,7 +105,7 @@ class _DashboardState extends State<Dashboard> {
   }
 
   void getProfile() async {
-    String url = "$HostAddress/profil";
+    String url = "$HostAddress/profile";
     String _token = await GetToken();
     try {
       final response = await Dio().get(url,
@@ -106,13 +114,13 @@ class _DashboardState extends State<Dashboard> {
             "Accept": "application/json"
           }));
 
-      // setState(() {
-      //   avatar = response.data["payload"]["get_siswa"]["image"] == null
-      //       ? BaseAvatar
-      //       : "$HostImage${response.data["payload"]["get_siswa"]["image"]}";
-      //   nama = response.data["payload"]["get_siswa"]["nama"].toString();
-      //   kelas = response.data["payload"]["get_siswa"]["kelas"].toString();
-      // });
+      setState(() {
+        avatar = response.data["payload"]["get_siswa"]["image"] == null
+            ? BaseAvatar
+            : "$HostImage${response.data["payload"]["get_siswa"]["image"]}";
+        nama = response.data["payload"]["get_siswa"]["nama"].toString();
+        kelas = response.data["payload"]["get_siswa"]["kelas"].toString();
+      });
       print(response.data);
     } on DioError catch (e) {
       Fluttertoast.showToast(
@@ -127,6 +135,11 @@ class _DashboardState extends State<Dashboard> {
     }
   }
 
+  refresh() async {
+    getOngoingTest();
+    getUpComingTest();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -135,104 +148,116 @@ class _DashboardState extends State<Dashboard> {
         child: Column(
           children: [
             ProfileNavbar(
-              nama: "Bagus Yanuar",
-              kelas: "XI IPS 2",
+              nama: nama,
+              kelas: kelas,
+              avatar: avatar,
             ),
             Expanded(
+              child: RefreshIndicator(
+                onRefresh: () {
+                  return refresh();
+                },
                 child: Container(
-              width: MediaQuery.of(context).size.width,
-              padding: EdgeInsets.only(left: 20, right: 20, top: 20),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      margin: EdgeInsets.only(bottom: 20),
-                      child: Text(
-                        "Ujian Yang Sedang Berlangsung",
-                        style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 20),
-                      child: isLoadingOngoing
-                          ? Container(
-                              height: 140,
-                              child: Center(
-                                child: SizedBox(
-                                  height: 30,
-                                  width: 30,
-                                  child: CircularProgressIndicator(),
-                                ),
-                              ),
-                            )
-                          : Column(
-                              children: _ongoingList.map((ujian) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(
-                                      bottom: 10, right: 5),
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      Navigator.pushNamed(context, "/detail",
-                                          arguments: ujian);
-                                    },
-                                    child: ListCard(
-                                      paket: ujian["nama_paket"].toString(),
-                                      mapel: ujian["mapel"].toString(),
-                                      image:
-                                          "$HostImage${ujian["url_gambar"].toString()}",
-                                      isOngoing: true,
+                  width: MediaQuery.of(context).size.width,
+                  padding: EdgeInsets.only(left: 20, right: 20, top: 20),
+                  child: LayoutBuilder(
+                    builder: (context, constaints) => SingleChildScrollView(
+                      physics: AlwaysScrollableScrollPhysics(),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            margin: EdgeInsets.only(bottom: 20),
+                            child: Text(
+                              "Ujian Yang Sedang Berlangsung",
+                              style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 20),
+                            child: isLoadingOngoing
+                                ? Container(
+                                    height: 140,
+                                    child: Center(
+                                      child: SizedBox(
+                                        height: 30,
+                                        width: 30,
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    ),
+                                  )
+                                : Column(
+                                    children: _ongoingList.map((ujian) {
+                                      return Padding(
+                                        padding: const EdgeInsets.only(
+                                            bottom: 10, right: 5),
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            Navigator.pushNamed(
+                                                context, "/detail",
+                                                arguments: ujian);
+                                          },
+                                          child: ListCard(
+                                            paket:
+                                                ujian["nama_paket"].toString(),
+                                            mapel: ujian["mapel"].toString(),
+                                            image:
+                                                "$HostImage${ujian["url_gambar"].toString()}",
+                                            isOngoing: true,
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                          ),
+                          Container(
+                            margin: EdgeInsets.only(bottom: 20),
+                            child: Text(
+                              "Ujian Yang Akan Datang",
+                              style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          isLoadingUpComming
+                              ? Container(
+                                  height: 140,
+                                  child: Center(
+                                    child: SizedBox(
+                                      height: 30,
+                                      width: 30,
+                                      child: CircularProgressIndicator(),
                                     ),
                                   ),
-                                );
-                              }).toList(),
-                            ),
-                    ),
-                    Container(
-                      margin: EdgeInsets.only(bottom: 20),
-                      child: Text(
-                        "Ujian Yang Akan Datang",
-                        style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold),
+                                )
+                              : Column(
+                                  children: _upComingList.map((ujian) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                          bottom: 10, right: 5),
+                                      child: ListCard(
+                                        paket: ujian["nama_paket"].toString(),
+                                        mapel: ujian["mapel"].toString(),
+                                        time: ujian["waktu_pengerjaan"],
+                                        image:
+                                            "$HostImage${ujian["url_gambar"].toString()}",
+                                        isOngoing: false,
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                        ],
                       ),
                     ),
-                    isLoadingUpComming
-                        ? Container(
-                            height: 140,
-                            child: Center(
-                              child: SizedBox(
-                                height: 30,
-                                width: 30,
-                                child: CircularProgressIndicator(),
-                              ),
-                            ),
-                          )
-                        : Column(
-                            children: _upComingList.map((ujian) {
-                              return Padding(
-                                padding:
-                                    const EdgeInsets.only(bottom: 10, right: 5),
-                                child: ListCard(
-                                  paket: ujian["nama_paket"].toString(),
-                                  mapel: ujian["mapel"].toString(),
-                                  time: ujian["waktu_pengerjaan"],
-                                  image:
-                                      "$HostImage${ujian["url_gambar"].toString()}",
-                                  isOngoing: false,
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                  ],
+                  ),
                 ),
               ),
-            )),
+            ),
             BottomNavbar()
           ],
         ),

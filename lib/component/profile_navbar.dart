@@ -46,7 +46,10 @@ class ProfileNavbar extends StatelessWidget {
               ),
             ],
           ),
-          CircleLogo(image: BaseAvatar, size: 60,)
+          CircleLogo(
+            image: this.avatar,
+            size: 60,
+          )
         ],
       ),
     );
