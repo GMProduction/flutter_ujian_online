@@ -110,6 +110,8 @@ class _DetailState extends State<Detail> {
       );
 
       print(response.data);
+      //skip to history if waktu_selesai not null
+
       DateTime start = DateTime.parse(response.data["waktu_mulai"].toString());
       DateTime testFinish = start.add(const Duration(minutes: 90));
       DateTime now = DateTime.now();
