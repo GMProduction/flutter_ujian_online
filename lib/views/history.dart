@@ -85,8 +85,8 @@ class _HistoryState extends State<History> {
                                     arguments: history);
                               },
                               child: HistoryCard(
-                                mapel: history["mapel"],
-                                paket: history["nama_paket"],
+                                // mapel: history["mapel"],
+                                paket: history["mapel"],
                                 nilai: history["nilai"] as int,
                                 image:
                                     "$HostImage${history["url_gambar"].toString()}",

@@ -51,10 +51,10 @@ class ListCard extends StatelessWidget {
                             fontSize: 14, fontWeight: FontWeight.bold),
                       ),
                     ),
-                    Text(
-                      this.mapel,
-                      style: TextStyle(fontSize: 12),
-                    ),
+                    // Text(
+                    //   this.mapel,
+                    //   style: TextStyle(fontSize: 12),
+                    // ),
                   ],
                 )),
                 Align(

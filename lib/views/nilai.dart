@@ -104,7 +104,7 @@ class _NilaiState extends State<Nilai> {
                     Container(
                       padding: EdgeInsets.all(20),
                       child: Text(
-                        "Hasil Penilaian Ujian ${ujian["nama_paket"].toString()}",
+                        "Hasil Penilaian Ujian ${ujian["mapel"].toString()}",
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold),
                       ),

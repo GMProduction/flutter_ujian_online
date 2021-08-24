@@ -193,14 +193,14 @@ class _DetailState extends State<Detail> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                ujian["nama_paket"].toString(),
+                                ujian["mapel"].toString(),
                                 style: TextStyle(
                                     fontSize: 16, fontWeight: FontWeight.bold),
                               ),
-                              Text(
-                                ujian["mapel"].toString(),
-                                style: TextStyle(fontSize: 14),
-                              ),
+                              // Text(
+                              //   ujian["mapel"].toString(),
+                              //   style: TextStyle(fontSize: 14),
+                              // ),
                             ],
                           ),
                           Row(

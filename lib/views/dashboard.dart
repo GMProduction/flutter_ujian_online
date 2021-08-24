@@ -202,9 +202,9 @@ class _DashboardState extends State<Dashboard> {
                                                 arguments: ujian);
                                           },
                                           child: ListCard(
-                                            paket:
-                                                ujian["nama_paket"].toString(),
-                                            mapel: ujian["mapel"].toString(),
+                                            // paket:
+                                            //     ujian["nama_paket"].toString(),
+                                            paket: ujian["mapel"].toString(),
                                             image:
                                                 "$HostImage${ujian["url_gambar"].toString()}",
                                             isOngoing: true,
@@ -241,8 +241,8 @@ class _DashboardState extends State<Dashboard> {
                                       padding: const EdgeInsets.only(
                                           bottom: 10, right: 5),
                                       child: ListCard(
-                                        paket: ujian["nama_paket"].toString(),
-                                        mapel: ujian["mapel"].toString(),
+                                        // paket: ujian["nama_paket"].toString(),
+                                        paket: ujian["mapel"].toString(),
                                         time: ujian["waktu_pengerjaan"],
                                         image:
                                             "$HostImage${ujian["url_gambar"].toString()}",
